@@ -232,19 +232,36 @@ add_title_slide <- function(pptx,
 #'
 #' @description
 #' Reads a PowerPoint template and removes all existing slides to create
-#' a clean starting point for adding new slides programmatically.
+#' a clean starting point for adding new slides programmatically. By default,
+#' uses the package's built-in template, but a custom template path can be
+#' provided.
 #'
-#' @param template_path Path to the PowerPoint template file
+#' @param template_path Path to a custom PowerPoint template file. If NULL
+#'   (default), uses the package's built-in template located in
+#'   `inst/extdata/template.pptx`.
 #'
 #' @return An officer pptx object with all slides removed
 #'
 #' @examples
 #' \dontrun{
-#' pptx <- init_pptx("path/to/template.pptx")
+#' # Use the built-in package template
+#' pptx <- init_pptx()
+#'
+#' # Or use a custom template
+#' pptx <- init_pptx("path/to/custom_template.pptx")
 #' }
 #'
 #' @export
-init_pptx <- function(template_path) {
+init_pptx <- function(template_path = NULL) {
+    # Use built-in template if no path provided
+    if (is.null(template_path)) {
+        template_path <- system.file(
+            "extdata", "tgtx_template.pptx",
+            package = "aaa.helper.fun",
+            mustWork = TRUE
+        )
+    }
+
     pptx <- officer::read_pptx(template_path)
 
     # Remove all slides from the template
