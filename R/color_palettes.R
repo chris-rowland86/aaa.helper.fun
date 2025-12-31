@@ -239,9 +239,10 @@ scale_color_tg <- function(palette = "main", discrete = TRUE, direction = 1, ...
     pal <- palette_gen(palette = palette, direction = direction)
 
     if (discrete) {
-        ggplot2::scale_colour_discrete(
-            paste0("tg_", palette),
-            type = pal,
+        ggplot2::discrete_scale(
+            aesthetics = "color",
+            scale_name = paste0("tg_", palette),
+            palette = pal,  # ggplot2 will call pal(n) automatically
             ...
         )
     } else {
@@ -290,9 +291,10 @@ scale_fill_tg <- function(palette = "main", discrete = TRUE, direction = 1, ...)
     pal <- palette_gen(palette = palette, direction = direction)
 
     if (discrete) {
-        ggplot2::scale_fill_discrete(
-            paste0("tg_", palette),
-            type = pal,
+        ggplot2::discrete_scale(
+            aesthetics = "fill",
+            scale_name = paste0("tg_", palette),
+            palette = pal,  # ggplot2 will call pal(n) automatically
             ...
         )
     } else {
