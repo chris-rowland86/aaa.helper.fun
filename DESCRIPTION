@@ -1,4 +1,4 @@
-Package: helper-fun
+Package: helper.fun
 Title: Workflow Helpers, Color Palettes, and Themes
 Version: 0.4.0
 Authors@R: 
