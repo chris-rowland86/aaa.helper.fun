@@ -114,7 +114,7 @@ format_flextable <- function(x,
 #' background coloring to match the flextable's styling.
 #'
 #' @param table A flextable object to export
-#' @param file_path Full path for the output Excel file (including .xlsx extension)
+#' @param file_name A string specifying the file name (without .xlsx extension).
 #' @param overwrite Logical indicating whether to overwrite existing files.
 #'   Defaults to TRUE
 #'
@@ -132,11 +132,11 @@ format_flextable <- function(x,
 #'   format_flextable()
 #'
 #' # Export to Excel
-#' export_flextable_to_excel(tbl, "output/summary_table.xlsx")
+#' export_flextable_to_excel(tbl, "summary_table")
 #' }
 #'
 #' @export
-export_flextable_to_excel <- function(table, file_path, overwrite = TRUE) {
+export_flextable_to_excel <- function(table, file_name, overwrite = TRUE) {
     # Extract data from flextable
     data <- table$body$dataset
 
@@ -173,7 +173,7 @@ export_flextable_to_excel <- function(table, file_path, overwrite = TRUE) {
             )
         }
     }
-
+    file_path <- here::here(output_folder, paste0(file_name, ".xlsx"))
     # Save workbook
     openxlsx2::wb_save(
         wb,
