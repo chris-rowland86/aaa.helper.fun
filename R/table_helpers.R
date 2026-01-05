@@ -1,28 +1,3 @@
-#' Replace NA and Zero Values with Em Dash
-#'
-#' @description
-#' Replaces specific values in summary tables with an em dash (—).
-#' Useful for cleaning up gtsummary or other summary table outputs
-#' where "0 (0%)", "NA", or "Inf" values should display as dashes.
-#'
-#' @param x A character vector to process
-#'
-#' @return A character vector with specified values replaced by em dashes
-#'
-#' @examples
-#' # Replace NA and zero values
-#' na_to_dash(c("5 (10%)", "0 (0%)", "NA", "10 (20%)"))
-#'
-#' @export
-na_to_dash <- function(x) {
-    dplyr::case_when(
-        x == "0 (0%)" ~ "\U2014",
-        stringr::str_detect(x, "NA") ~ "\U2014",
-        stringr::str_detect(x, "Inf") ~ "\U2014",
-        TRUE ~ x
-    )
-}
-
 #' Format Flextable with TG Styling
 #'
 #' @description
