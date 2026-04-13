@@ -16,6 +16,8 @@ tg_corp_palette(palette = "main", ...)
 \item Any individual color name (e.g., \code{"ice_blue"}, \code{"green"}) returns
 a ramped hue palette for that color
 }}
+
+\item{...}{Additional arguments (currently unused).}
 }
 \value{
 A named character vector of hex color codes, or a list of all

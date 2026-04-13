@@ -27,6 +27,8 @@ Defaults to TG ice blue ("#BBCBD3")}
 \item{font_family}{Font family to use. Defaults to "Arial"}
 
 \item{line_spacing}{Line spacing multiplier. Defaults to 1}
+
+\item{border_width}{Border line width in points. Defaults to 0.25}
 }
 \value{
 A formatted flextable object

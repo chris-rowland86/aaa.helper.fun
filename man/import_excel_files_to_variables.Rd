@@ -30,7 +30,7 @@ import_excel_files_to_variables(
   file_name = "my_data.xlsx",
   sheet = "Sheet1"
 )
-# The data is now available as `my_data` in the global environment
+# The data is now available as `my_data_source` in the global environment
 }
 
 }

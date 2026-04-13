@@ -18,6 +18,7 @@
 #' @param footer_size Font size for table footer. Defaults to 8
 #' @param font_family Font family to use. Defaults to "Arial"
 #' @param line_spacing Line spacing multiplier. Defaults to 1
+#' @param border_width Border line width in points. Defaults to 0.25
 #'
 #' @return A formatted flextable object
 #'

@@ -19,6 +19,7 @@ A custom ggplot2 theme with TG Therapeutics styling. Features Arial font,
 centered titles, clean backgrounds, and professional axis formatting.
 }
 \examples{
+\dontrun{
 library(ggplot2)
 
 # Apply TG theme to a plot
@@ -33,5 +34,6 @@ ggplot(mtcars, aes(x = mpg, y = hp)) +
 
 # Apply theme globally to all plots
 theme_set(theme_tg())
+}
 
 }

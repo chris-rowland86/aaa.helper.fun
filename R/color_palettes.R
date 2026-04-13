@@ -49,6 +49,7 @@ tg_corp_color <- function(...) {
 #'
 #' @param center_color A single color (hex code or color name) to act as
 #'   the center color being darkened and lightened
+#' @param ... Additional arguments (currently unused).
 #'
 #' @return A character vector of 7 hex color codes ranging from dark to light
 #'
@@ -84,6 +85,7 @@ ramp_hues <- function(center_color = NULL, ...) {
 #'   * `"all"` - returns list of all available palettes
 #'   * Any individual color name (e.g., `"ice_blue"`, `"green"`) returns
 #'     a ramped hue palette for that color
+#' @param ... Additional arguments (currently unused).
 #'
 #' @return A named character vector of hex color codes, or a list of all
 #'   palettes if `palette = "all"`

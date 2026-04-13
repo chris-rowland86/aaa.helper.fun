@@ -20,14 +20,17 @@
 #'   file_name = "my_data.xlsx",
 #'   sheet = "Sheet1"
 #' )
-#' # The data is now available as `my_data` in the global environment
+#' # The data is now available as `my_data_source` in the global environment
 #' }
 #'
 #' @export
 import_excel_files_to_variables <- function(folder, file_name, sheet) {
     assign(
-        x = stringr::str_to_lower(
-            stringr::str_remove(file_name, ".xlsx")
+        x = paste0(
+            stringr::str_to_lower(
+                stringr::str_remove(file_name, ".xlsx")
+            ),
+            "_source"
         ),
         value = data.table::as.data.table(
             janitor::clean_names(
@@ -64,13 +67,13 @@ import_excel_files_to_variables <- function(folder, file_name, sheet) {
 #'
 #' # Import table
 #' import_access_tables_to_variables(connection = conn, table_name = "MyTable")
-#' # The data is now available as `mytable` in the global environment
+#' # The data is now available as `mytable_source` in the global environment
 #' }
 #'
 #' @export
 import_access_tables_to_variables <- function(connection, table_name) {
     assign(
-        x = stringr::str_to_lower(table_name),
+        x = paste0(stringr::str_to_lower(table_name), "_source"),
         value = data.table::as.data.table(
             janitor::clean_names(
                 RODBC::sqlFetch(connection, table_name)
@@ -98,14 +101,17 @@ import_access_tables_to_variables <- function(connection, table_name) {
 #' @examples
 #' \dontrun{
 #' import_sas_files_to_variables(folder = "data", file_name = "my_data.sas7bdat")
-#' # The data is now available as `my_data` in the global environment
+#' # The data is now available as `my_data_source` in the global environment
 #' }
 #'
 #' @export
 import_sas_files_to_variables <- function(folder, file_name) {
     assign(
-        x = stringr::str_to_lower(
-            stringr::str_remove(file_name, ".sas7bdat")
+        x = paste0(
+            stringr::str_to_lower(
+                stringr::str_remove(file_name, ".sas7bdat")
+            ),
+            "_source"
         ),
         value = data.table::as.data.table(
             janitor::clean_names(
@@ -136,14 +142,17 @@ import_sas_files_to_variables <- function(folder, file_name) {
 #' @examples
 #' \dontrun{
 #' import_xpt_files_to_variables(folder = "data", file_name = "my_data.xpt")
-#' # The data is now available as `my_data` in the global environment
+#' # The data is now available as `my_data_source` in the global environment
 #' }
 #'
 #' @export
 import_xpt_files_to_variables <- function(folder, file_name) {
     assign(
-        x = stringr::str_to_lower(
-            stringr::str_remove(file_name, ".xpt")
+        x = paste0(
+            stringr::str_to_lower(
+                stringr::str_remove(file_name, ".xpt")
+            ),
+            "_source"
         ),
         value = data.table::as.data.table(
             janitor::clean_names(
@@ -174,14 +183,17 @@ import_xpt_files_to_variables <- function(folder, file_name) {
 #' @examples
 #' \dontrun{
 #' import_csv_files_to_variables(folder = "data", file_name = "my_data.csv")
-#' # The data is now available as `my_data` in the global environment
+#' # The data is now available as `my_data_source` in the global environment
 #' }
 #'
 #' @export
 import_csv_files_to_variables <- function(folder, file_name) {
     assign(
-        x = stringr::str_to_lower(
-            stringr::str_remove(file_name, ".csv")
+        x = paste0(
+            stringr::str_to_lower(
+                stringr::str_remove(file_name, ".csv")
+            ),
+            "_source"
         ),
         value = janitor::clean_names(
             data.table::fread(
@@ -191,6 +203,67 @@ import_csv_files_to_variables <- function(folder, file_name) {
         envir = .GlobalEnv
     )
     invisible()
+}
+
+#' Apply Column Name Mapping to a data.table
+#'
+#' @description
+#' Renames columns in a data.table according to a central lookup CSV that maps
+#' source-specific column names to predefined standard variable names. Only columns
+#' listed in the mapping are renamed; all other columns pass through unchanged.
+#' The data.table is modified by reference.
+#'
+#' @param dt A data.table whose columns should be renamed.
+#' @param domain A string identifying the dataset domain (e.g., "ae", "dm", "lb").
+#'   Used to filter the mapping file to the relevant rows.
+#' @param map_path A string specifying the path to the column mapping CSV file,
+#'   resolved relative to the project root via `here::here()`. The CSV must contain
+#'   columns: `domain`, `source_col`, `standard_col`. Defaults to
+#'   `"data/column_map.csv"`.
+#'
+#' @return The modified data.table (invisibly). The table is renamed in place by
+#'   reference.
+#'
+#' @examples
+#' \dontrun{
+#' # After import: ae_source exists in .GlobalEnv
+#' ae_clean <- data.table::copy(ae_source)
+#' apply_column_map(ae_clean, domain = "ae")
+#' # ae_clean now uses standard column names; ae_source is unchanged
+#' }
+#'
+#' @export
+apply_column_map <- function(dt, domain, map_path = "data/column_map.csv") {
+    map_file <- here::here(map_path)
+    if (!file.exists(map_file)) {
+        warning("Column map file not found: ", map_file, ". No columns renamed.")
+        return(invisible(dt))
+    }
+
+    col_map <- data.table::fread(map_file)
+    col_map <- col_map[col_map$domain == domain, ]
+
+    if (nrow(col_map) == 0L) {
+        warning("No mappings found for domain '", domain, "' in ", map_path, ".")
+        return(invisible(dt))
+    }
+
+    dt_names <- names(dt)
+    matched <- col_map$source_col %in% dt_names
+    if (any(!matched)) {
+        missing_cols <- col_map$source_col[!matched]
+        warning(
+            "Column map references source columns not found in data: ",
+            paste(missing_cols, collapse = ", ")
+        )
+    }
+
+    col_map <- col_map[matched, ]
+    if (nrow(col_map) > 0L) {
+        data.table::setnames(dt, old = col_map$source_col, new = col_map$standard_col)
+    }
+
+    invisible(dt)
 }
 
 #' Export Data to Excel File

@@ -2,6 +2,7 @@
 
 export(add_title_slide)
 export(add_to_pptx)
+export(apply_column_map)
 export(complete_end_date)
 export(complete_start_date)
 export(convert_to_rvg)

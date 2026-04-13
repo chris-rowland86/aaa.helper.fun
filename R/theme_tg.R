@@ -10,6 +10,7 @@
 #' @return A ggplot2 theme object
 #'
 #' @examples
+#' \dontrun{
 #' library(ggplot2)
 #'
 #' # Apply TG theme to a plot
@@ -24,6 +25,7 @@
 #'
 #' # Apply theme globally to all plots
 #' theme_set(theme_tg())
+#' }
 #'
 #' @export
 theme_tg <- function(base_size = 18, base_family = "Arial") {

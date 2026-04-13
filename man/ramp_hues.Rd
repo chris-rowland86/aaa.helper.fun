@@ -9,6 +9,8 @@ ramp_hues(center_color = NULL, ...)
 \arguments{
 \item{center_color}{A single color (hex code or color name) to act as
 the center color being darkened and lightened}
+
+\item{...}{Additional arguments (currently unused).}
 }
 \value{
 A character vector of 7 hex color codes ranging from dark to light

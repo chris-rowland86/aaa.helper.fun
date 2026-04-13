@@ -24,7 +24,7 @@ to a data.table and column names are cleaned using janitor.
 \examples{
 \dontrun{
 import_xpt_files_to_variables(folder = "data", file_name = "my_data.xpt")
-# The data is now available as `my_data` in the global environment
+# The data is now available as `my_data_source` in the global environment
 }
 
 }

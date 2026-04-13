@@ -29,7 +29,7 @@ conn <- RODBC::odbcDriverConnect("Driver={Microsoft Access Driver (*.mdb, *.accd
 
 # Import table
 import_access_tables_to_variables(connection = conn, table_name = "MyTable")
-# The data is now available as `mytable` in the global environment
+# The data is now available as `mytable_source` in the global environment
 }
 
 }

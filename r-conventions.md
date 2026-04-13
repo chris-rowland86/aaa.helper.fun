@@ -17,12 +17,12 @@ The `aaa.helper.fun` package (`chris-rowland86/aaa.helper.fun`) is the **single 
 | **Colors** | `tg_corp_color()`, `tg_corp_palette()`, `palette_gen()`, `scale_color_tg()`, `scale_fill_tg()`, `ramp_hues()` |
 | **Theme** | `theme_tg()` — apply to all ggplots; set globally with `theme_set(theme_tg())` |
 | **Dates** | `complete_start_date()`, `complete_end_date()`, `last_day()`, `days_to_months()`, `days_to_years()`, `hhmm_to_min()` |
-| **Import** | `import_access_tables_to_variables()`, `import_excel_files_to_variables()`, `import_csv_files_to_variables()`, `import_sas_files_to_variables()`, `import_xpt_files_to_variables()` |
+| **Import** | `import_access_tables_to_variables()`, `import_excel_files_to_variables()`, `import_csv_files_to_variables()`, `import_sas_files_to_variables()`, `import_xpt_files_to_variables()`, `apply_column_map()` |
 | **Export** | `export_to_excel()`, `export_flextable_to_excel()` |
 | **PPTX** | `init_pptx()`, `add_to_pptx()`, `add_title_slide()`, `convert_to_rvg()` |
 | **Tables** | `format_flextable()`, `na_to_dash()`, `format_incidence_percent()` |
 
-All import functions store data as `data.table` in `.GlobalEnv` with `janitor::clean_names()`.
+All import functions store data as `data.table` in `.GlobalEnv` with `janitor::clean_names()` and automatically append a **`_source`** suffix to the variable name (e.g., importing `ae.xlsx` creates `ae_source`).
 
 ---
 
@@ -35,9 +35,15 @@ All import functions store data as `data.table` in `.GlobalEnv` with `janitor::c
 - This preserves the original imported data for auditing, comparison, and re-derivation at any point.
 ```r
 # Example workflow
-# After import: ae_source exists in .GlobalEnv
+# Import creates ae_source in .GlobalEnv automatically (with _source suffix)
+import_excel_files_to_variables("data", "ae.xlsx", "Sheet1")
+
+# Create working copy and apply standard column names
 ae_clean <- copy(ae_source)
-ae_clean[, stdt := as.IDate(stdt, format = "%Y-%m-%d")]
+apply_column_map(ae_clean, domain = "ae")
+
+# All processing uses _clean with standard column names
+ae_clean[, ae_stdt := as.IDate(ae_stdt, format = "%Y-%m-%d")]
 ae_clean[, duration := days_to_months(duration_days)]
 ```
 
@@ -109,7 +115,58 @@ Faceted plots: add dummy rows for empty facets via `rbind(..., fill = TRUE)`.
 ---
 
 ## Clinical Data Standards
-- **Never rename EDC/source columns** — preserve original names through the entire pipeline
+
+### Column Mapping Convention
+- **`_source` tables preserve original column names** — never modify or rename columns in `_source` data.
+- When creating the `_clean` copy, apply `apply_column_map()` from `aaa.helper.fun` to rename key source-specific columns to **predefined standard variable names**.
+- Unmapped columns pass through unchanged from `_source` to `_clean`.
+- Each project maintains a **central lookup CSV** at `data/column_map.csv` with columns:
+
+| `domain` | `source_col` | `standard_col` |
+|----------|-------------|----------------|
+| ae | aeterm | ae_term |
+| ae | aestdtc | ae_stdt |
+| ae | aeendtc | ae_endt |
+| ae | aesev | ae_sev |
+| dm | subjid_edc | subjid |
+| dm | arm | trt |
+| lb | lbtestcd | param |
+| lb | lborres | param_val |
+
+- `domain` matches the dataset prefix (e.g., `"ae"`, `"dm"`, `"lb"`, `"cm"`)
+- `source_col` references column names **after** `janitor::clean_names()` (lowercase/snake_case)
+- `standard_col` is a predefined standard name from the canonical list below
+
+### Standard Variable Names (Canonical List)
+| Category | Standard Name | Description |
+|----------|--------------|-------------|
+| **Identity** | `subjid` | Subject identifier (format: `XXX-NNN`) |
+| | `siteid` | Site identifier |
+| **Visit** | `visit` | Original visit text |
+| | `visit_c` | Abbreviated visit code (e.g., "w1d1", "w24") |
+| | `visit_n` | Numeric visit/week number |
+| | `visit_dt` | Visit date |
+| **Treatment** | `trt` | Treatment/arm assignment |
+| | `trt_dt` | Treatment start date |
+| **Adverse Events** | `ae_term` | AE verbatim term |
+| | `ae_term_pt` | AE preferred term (MedDRA) |
+| | `ae_sev` | AE severity |
+| | `ae_ser` | AE serious (Y/N) |
+| | `ae_rel` | AE relationship to treatment |
+| | `ae_stdt` | AE start date |
+| | `ae_endt` | AE end date |
+| | `ae_out` | AE outcome |
+| **Labs/Vitals** | `param` | Parameter name |
+| | `param_val` | Parameter value (numeric) |
+| | `param_unit` | Parameter unit |
+| | `param_dt` | Parameter collection date |
+| **Con Meds** | `cm_name` | Concomitant medication name |
+| | `cm_stdt` | Con med start date |
+| | `cm_endt` | Con med end date |
+| **Milestones** | `rand_dt` | Randomization date |
+| | `icf_dt` | Informed consent date |
+
+*This list is extensible — add project-specific standard names as needed.*
 - Primary key: `subjid` (subject identifier, format: `XXX-NNN`)
 - Visit variables: `visit` (original text), `visit_c` (abbreviated: "w1d1", "w24", "w48_eos"), `visit_n` (numeric week)
 - `cutoff_date` must be respected in every summary/figure — flag post-cutoff data with `new_data_fl`
