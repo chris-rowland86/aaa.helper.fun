@@ -96,7 +96,7 @@ data |>
 ---
 
 ## Visualization Pattern
-All plotting functions should accept: `data`, `filt_var`/`filt_val` (optional filter), `y_var`, `caption`, and export parameters. Build with `ggplot2` + `theme_tg()`. Use:
+All plotting functions should accept: `data`, `y_var`, `caption`, and export parameters. Build with `ggplot2` + `theme_tg()`. Use:
 - `position_jitter(seed = 123)` for reproducible jitter
 - `geom_text_repel()` for labels (always with `na.rm = TRUE`)
 - Corporate colors: `tg_corp_color()`, `scale_color_tg()`, `scale_fill_tg()`
