@@ -13,6 +13,8 @@ Description: Provides corporate color palettes, ggplot2 themes,
     utilities for Excel, CSV, SAS, XPT, and Microsoft Access files, and
     date manipulation helpers for partial date imputation and time conversions.
 License: MIT + file LICENSE
+Depends:
+    R (>= 4.1.0)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
