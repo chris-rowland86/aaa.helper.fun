@@ -241,3 +241,33 @@ days_to_years <- function(days) {
 hhmm_to_min <- function(hhmm) {
     lubridate::hour(hhmm) * 60 + lubridate::minute(hhmm)
 }
+
+#' Get Latest File-Modified Date in a Folder Tree
+#'
+#' @description
+#' Scans all files recursively within a folder and returns the most recently
+#' modified file's date as an `IDate`. Useful for inferring data pull dates
+#' from source-file directories.
+#'
+#' @param folder_path Character string. Path to the folder to scan.
+#'
+#' @return An `IDate` representing the most recent file modification date,
+#'   or `NA` (as `IDate`) if the folder contains no files.
+#'
+#' @examples
+#' \dontrun{
+#' get_latest_folder_date(here::here("source-files", "01_edc_data"))
+#' }
+#'
+#' @export
+get_latest_folder_date <- function(folder_path) {
+    files <- list.files(folder_path, recursive = TRUE, full.names = TRUE)
+
+    if (length(files) == 0L) {
+        return(as.IDate(NA))
+    }
+
+    file.mtime(files) |>
+        max(na.rm = TRUE) |>
+        as.IDate()
+}
