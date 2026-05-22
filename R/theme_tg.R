@@ -1,4 +1,4 @@
-#' TG Therapeutics Custom ggplot2 Theme #
+#' TG Therapeutics Custom ggplot2 Theme
 #'
 #' @description
 #' A custom ggplot2 theme with TG Therapeutics styling. Features Arial font,
