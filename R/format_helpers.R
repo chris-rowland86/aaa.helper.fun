@@ -49,3 +49,25 @@ format_incidence_percent <- function(x, accuracy = 0.1) {
         default = scales::label_percent(accuracy = accuracy)(x)
     )
 }
+
+convert_cm_to_ft_in <- function(cm) {
+  # 1. Calculate total inches
+  total_inches <- cm / 2.54
+  
+  # 2. Get whole feet
+  feet <- total_inches %/% 12
+  
+  # 3. Get remaining inches (rounded to 1 decimal place)
+  inches <- round(total_inches %% 12, 1)
+  
+  # 4. Handle cases where rounding inches up to 12 should increment feet
+  if (inches == 12) {
+    feet <- feet + 1
+    inches <- 0
+  }
+  
+  # 5. Format as a character string
+  result <- paste0(feet, "' ", inches, "\"")
+  
+  return(result)
+}
