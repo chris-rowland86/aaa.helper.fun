@@ -54,14 +54,14 @@ format_incidence_percent <- function(x, accuracy = 0.1) {
 #'
 #' @description
 #' Converts a numeric value (or vector) from centimetres to a formatted
-#' feet-and-inches string (e.g. `170` -> `5' 6.9"`).  The function is
+#' feet-and-inches string (e.g. `170` -> `5 ft 6.9 in`).  The function is
 #' fully vectorised and handles `NA` values, making it safe to use directly
 #' on columns in data frames and `data.table` objects.
 #'
 #' @param cm A numeric vector of heights in centimetres.
 #'
 #' @return A character vector of the same length as `cm` formatted as
-#'   `<feet>' <inches>"`.  Elements corresponding to `NA` input values
+#'   `<feet> ft <inches> in`.  Elements corresponding to `NA` input values
 #'   are returned as `NA_character_`.
 #'
 #' @examples

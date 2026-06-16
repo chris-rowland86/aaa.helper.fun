@@ -11,12 +11,12 @@ convert_cm_to_ft_in(cm)
 }
 \value{
 A character vector of the same length as \code{cm} formatted as
-\verb{<feet>' <inches>"}.  Elements corresponding to \code{NA} input values
+\verb{<feet> ft <inches> in}.  Elements corresponding to \code{NA} input values
 are returned as \code{NA_character_}.
 }
 \description{
 Converts a numeric value (or vector) from centimetres to a formatted
-feet-and-inches string (e.g. \code{170} -> \code{5' 6.9"}).  The function is
+feet-and-inches string (e.g. \code{170} -> \code{5 ft 6.9 in}).  The function is
 fully vectorised and handles \code{NA} values, making it safe to use directly
 on columns in data frames and \code{data.table} objects.
 }
