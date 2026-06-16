@@ -50,24 +50,43 @@ format_incidence_percent <- function(x, accuracy = 0.1) {
     )
 }
 
+#' Convert Centimetres to Feet and Inches
+#'
+#' @description
+#' Converts a numeric value (or vector) from centimetres to a formatted
+#' feet-and-inches string (e.g. `170` -> `"5' 6.9\"`).  The function is
+#' fully vectorised and handles `NA` values, making it safe to use directly
+#' on columns in data frames and `data.table` objects.
+#'
+#' @param cm A numeric vector of heights in centimetres.
+#'
+#' @return A character vector of the same length as `cm` formatted as
+#'   `"<feet>' <inches>\""`.  Elements corresponding to `NA` input values
+#'   are returned as `NA_character_`.
+#'
+#' @examples
+#' convert_cm_to_ft_in(170)
+#' convert_cm_to_ft_in(c(150, 170, 190, NA))
+#'
+#' @export
 convert_cm_to_ft_in <- function(cm) {
   # 1. Calculate total inches
   total_inches <- cm / 2.54
-  
+
   # 2. Get whole feet
   feet <- total_inches %/% 12
-  
+
   # 3. Get remaining inches (rounded to 1 decimal place)
   inches <- round(total_inches %% 12, 1)
-  
+
   # 4. Handle cases where rounding inches up to 12 should increment feet
-  if (inches == 12) {
-    feet <- feet + 1
-    inches <- 0
-  }
-  
-  # 5. Format as a character string
+  inches_round_to_12 <- !is.na(inches) & inches == 12
+  feet[inches_round_to_12] <- feet[inches_round_to_12] + 1
+  inches[inches_round_to_12] <- 0
+
+  # 5. Format as a character string; restore NAs from input
   result <- paste0(feet, "' ", inches, "\"")
-  
+  result[is.na(cm)] <- NA_character_
+
   return(result)
 }
