@@ -1,6 +1,6 @@
 Package: aaa.helper.fun
 Title: Workflow Helpers, Color Palettes, and Themes
-Version: 0.4.1
+Version: 0.5.0
 Authors@R: 
     person("Chris", "Rowland", email = "christopher.r.rowland@gmail.com", role = c("aut", "cre"),
            comment = "Director, Clinical Data Science")

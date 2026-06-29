@@ -16,7 +16,7 @@ are returned as \code{NA_character_}.
 }
 \description{
 Converts a numeric value (or vector) from centimetres to a formatted
-feet-and-inches string (e.g. \code{170} -> \code{5 ft 6.9 in}).  The function is
+feet-and-inches string (e.g. \code{170} -> \verb{5 ft 6.9 in}).  The function is
 fully vectorised and handles \code{NA} values, making it safe to use directly
 on columns in data frames and \code{data.table} objects.
 }

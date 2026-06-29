@@ -205,6 +205,280 @@ import_csv_files_to_variables <- function(folder, file_name) {
     invisible()
 }
 
+#' Import a SAS `.dat` Export to the Global Environment
+#'
+#' @description
+#' Imports a multi-table SAS export consisting of a single SAS program (which
+#' defines each table's column names, order, and formats) accompanied by one
+#' pipe-delimited `.dat` data file per table. This is the format produced by
+#' clinical EDC systems (e.g. Clario) when exporting a study database, and is a
+#' useful alternative to a Microsoft Access export on platforms where no Access
+#' driver is available (such as macOS).
+#'
+#' The `.dat` files contain no header row; the column names and their order are
+#' read from the `INPUT` statement of each `DATA` step in the SAS program, and
+#' SAS date/datetime/time columns are identified from the `format=` markers in
+#' each `ATTRIB` block. Every table is read with [data.table::fread()], cleaned
+#' with [janitor::clean_names()], and assigned to `envir` as a `data.table`
+#' named `<lowercase table>_source` (e.g. `EX.dat` becomes `ex_source`).
+#'
+#' @param folder A string specifying the folder containing the SAS program and
+#'   its `.dat` files, resolved relative to the project root via [here::here()].
+#' @param sas_program A string specifying the file name of the SAS program that
+#'   defines the table structures (e.g. `"TGTH004.sas"`).
+#' @param convert_dates Logical. When `TRUE`, columns flagged in the SAS program
+#'   as `DATE` (SAS dates, origin 1960-01-01), `DATETIME`, or `TIME` formats are
+#'   converted to `IDate`, `POSIXct` (UTC), and `ITime` respectively. When
+#'   `FALSE` (the default), these columns are left as the raw SAS integer values
+#'   so the `_source` table remains a faithful, unmodified copy of the export.
+#' @param envir The environment to assign the imported tables to. Defaults to
+#'   the global environment.
+#'
+#' @return This function is called for its side effect of assigning one
+#'   `data.table` per table to `envir`. Returns invisibly.
+#'
+#' @examples
+#' \dontrun{
+#' # Import every .dat table defined by TGTH004.sas as <table>_source
+#' import_sas_dat_export_to_variables(
+#'   folder = "source-files/sas_edc_data",
+#'   sas_program = "TGTH004.sas"
+#' )
+#' # ex_source, ae_source, dm_source, ... are now available
+#'
+#' # Convert SAS date/datetime/time columns on import
+#' import_sas_dat_export_to_variables(
+#'   folder = "source-files/sas_edc_data",
+#'   sas_program = "TGTH004.sas",
+#'   convert_dates = TRUE
+#' )
+#' }
+#'
+#' @export
+import_sas_dat_export_to_variables <- function(folder,
+                                               sas_program,
+                                               convert_dates = FALSE,
+                                               envir = .GlobalEnv) {
+    sas_lines <- readLines(here::here(folder, sas_program), warn = FALSE)
+
+    # locate the start of every "DATA <libname>.<table>" step
+    data_step_starts <- stringr::str_which(sas_lines, "^DATA\\s+\\w+\\.")
+    if (length(data_step_starts) == 0L) {
+        stop(
+            "No DATA steps found in SAS program: ",
+            here::here(folder, sas_program)
+        )
+    }
+
+    # end of each block = line before the next DATA step (last block runs to EOF)
+    data_step_ends <- c(data_step_starts[-1] - 1L, length(sas_lines))
+
+    purrr::walk(
+        seq_along(data_step_starts),
+        function(i) {
+            block <- sas_lines[data_step_starts[i]:data_step_ends[i]]
+            table_def <- parse_sas_data_step(block)
+            import_one_sas_dat(
+                table_def = table_def,
+                folder = folder,
+                convert_dates = convert_dates,
+                envir = envir
+            )
+        }
+    )
+
+    invisible()
+}
+
+#' Parse a single SAS DATA step
+#'
+#' Extracts the `.dat` file name (INFILE), the ordered column names (INPUT), and
+#' the date/datetime/time columns (ATTRIB `format=` markers) from the lines of a
+#' single SAS DATA step.
+#'
+#' @param block A character vector of the lines making up one DATA step.
+#' @return A list with `dat_file`, `column_names`, `date_vars`, `datetime_vars`,
+#'   and `time_vars`.
+#' @noRd
+parse_sas_data_step <- function(block) {
+    # --- .dat file name from the INFILE statement ---
+    infile_line <- block[stringr::str_detect(block, "(?i)^INFILE")]
+    dat_file <- stringr::str_match(infile_line, "([^\\\\\"]+\\.dat)")[, 2]
+
+    # --- column names from the INPUT statement ---
+    # the INPUT statement runs from the line beginning with INPUT up to the
+    # first line that is only a semicolon
+    input_start <- stringr::str_which(block, "(?i)^INPUT\\b")[1]
+    input_end <- input_start - 1L +
+        stringr::str_which(block[input_start:length(block)], "^\\s*;\\s*$")[1]
+    column_names <- block[input_start:input_end] |>
+        # drops the leading INPUT keyword (first token)
+        stringr::str_remove("(?i)^INPUT\\b") |>
+        stringr::str_trim() |>
+        # removes the trailing "$" that flags character variables in SAS
+        stringr::str_remove("\\$$") |>
+        stringr::str_trim()
+    column_names <- column_names[column_names != "" & column_names != ";"]
+
+    # --- date/datetime/time columns from the ATTRIB statement ---
+    # each ATTRIB line names a variable and may carry a "format=" marker, e.g.
+    #   AEDTHDAT format=DATE9.       (SAS date     - days since 1960-01-01)
+    #   EDC_EntryDate format=DATETIME16. (SAS datetime - seconds since 1960-01-01)
+    #   AEIRRTIM format= TIME8.      (SAS time     - seconds since midnight)
+    attrib_start <- stringr::str_which(block, "(?i)^ATTRIB\\b")[1]
+    if (is.na(attrib_start)) {
+        date_vars <- datetime_vars <- time_vars <- character(0)
+    } else {
+        attrib_end <- attrib_start - 1L +
+            stringr::str_which(block[attrib_start:length(block)], "^\\s*;\\s*$")[1]
+        attrib_lines <- block[attrib_start:attrib_end] |>
+            stringr::str_remove("(?i)^ATTRIB\\b") |>
+            stringr::str_trim()
+
+        # first whitespace-delimited token of an ATTRIB line is the variable name
+        var_of <- function(lines) stringr::str_match(lines, "^(\\w+)")[, 2]
+
+        # anchored at "format=" so DATETIME is not mis-read as DATE, and so on
+        date_vars <- var_of(
+            attrib_lines[stringr::str_detect(attrib_lines, "(?i)format=\\s*DATE[0-9]")]
+        )
+        datetime_vars <- var_of(
+            attrib_lines[stringr::str_detect(attrib_lines, "(?i)format=\\s*DATETIME")]
+        )
+        time_vars <- var_of(
+            attrib_lines[stringr::str_detect(attrib_lines, "(?i)format=\\s*TIME[0-9]")]
+        )
+    }
+
+    list(
+        dat_file = dat_file,
+        column_names = column_names,
+        date_vars = unname(date_vars),
+        datetime_vars = unname(datetime_vars),
+        time_vars = unname(time_vars)
+    )
+}
+
+#' Import one SAS `.dat` table and assign it to an environment
+#'
+#' @param table_def A parsed table definition from `parse_sas_data_step()`.
+#' @param folder The folder containing the `.dat` file.
+#' @param convert_dates Logical; convert SAS date/datetime/time columns.
+#' @param envir The environment to assign the table to.
+#' @return Invisibly `NULL`; called for its side effect.
+#' @noRd
+import_one_sas_dat <- function(table_def, folder, convert_dates, envir) {
+    dat_path <- here::here(folder, table_def$dat_file)
+    column_names <- table_def$column_names
+
+    # variable name: lowercase file name (sans ".dat") + "_source"
+    # e.g. EX.dat -> ex_source, WEAR_OFF.dat -> wear_off_source
+    variable_name <- paste0(
+        stringr::str_to_lower(stringr::str_remove(table_def$dat_file, "\\.dat$")),
+        "_source"
+    )
+
+    # reads the data if present; some exported tables can be empty (e.g. no
+    # protocol deviations recorded), in which case an empty table that still
+    # carries the expected columns is returned
+    imported <- tryCatch(
+        {
+            dt <- data.table::fread(
+                dat_path,
+                sep = "|", # SAS INFILE DLM='|'
+                header = FALSE, # .dat files have no header row
+                quote = "\"", # SAS DSD quotes fields containing the delimiter
+                fill = TRUE, # SAS MISSOVER pads short rows with missing
+                na.strings = "",
+                encoding = "UTF-8"
+            )
+
+            # each data line ends with a trailing "|" which adds one empty
+            # column - keeps only the columns defined by the SAS INPUT statement
+            if (ncol(dt) > length(column_names)) {
+                dt <- dt[, seq_along(column_names), with = FALSE]
+            }
+
+            data.table::setnames(dt, column_names)
+            dt
+        },
+        error = function(e) {
+            data.table::as.data.table(
+                matrix(
+                    character(0),
+                    nrow = 0,
+                    ncol = length(column_names),
+                    dimnames = list(NULL, column_names)
+                )
+            )
+        }
+    )
+
+    if (isTRUE(convert_dates) && nrow(imported) > 0L) {
+        convert_sas_date_columns(imported, table_def)
+    }
+
+    # cleans column names to snake_case to match the rest of the pipeline
+    imported <- data.table::as.data.table(janitor::clean_names(imported))
+
+    assign(variable_name, imported, envir = envir)
+    invisible()
+}
+
+#' Convert SAS date/datetime/time columns in place
+#'
+#' SAS stores dates as days since 1960-01-01, datetimes as seconds since
+#' 1960-01-01 00:00:00, and times as seconds since midnight. Converts the columns
+#' flagged in `table_def` to `IDate`, `POSIXct` (UTC), and `ITime` respectively,
+#' modifying `dt` by reference.
+#'
+#' @param dt A data.table with the original (pre-clean_names) column names.
+#' @param table_def A parsed table definition from `parse_sas_data_step()`.
+#' @return Invisibly the modified data.table.
+#' @noRd
+convert_sas_date_columns <- function(dt, table_def) {
+    date_vars <- intersect(table_def$date_vars, names(dt))
+    datetime_vars <- intersect(table_def$datetime_vars, names(dt))
+    time_vars <- intersect(table_def$time_vars, names(dt))
+
+    for (col in date_vars) {
+        data.table::set(
+            dt,
+            j = col,
+            value = data.table::as.IDate(
+                as.Date(
+                    suppressWarnings(as.numeric(dt[[col]])),
+                    origin = "1960-01-01"
+                )
+            )
+        )
+    }
+
+    for (col in datetime_vars) {
+        data.table::set(
+            dt,
+            j = col,
+            value = as.POSIXct(
+                suppressWarnings(as.numeric(dt[[col]])),
+                origin = "1960-01-01",
+                tz = "UTC"
+            )
+        )
+    }
+
+    for (col in time_vars) {
+        data.table::set(
+            dt,
+            j = col,
+            value = data.table::as.ITime(
+                suppressWarnings(as.numeric(dt[[col]]))
+            )
+        )
+    }
+
+    invisible(dt)
+}
+
 #' Apply Column Name Mapping to a data.table
 #'
 #' @description

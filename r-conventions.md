@@ -17,7 +17,7 @@ The `aaa.helper.fun` package (`chris-rowland86/aaa.helper.fun`) is the **single 
 | **Colors** | `tg_corp_color()`, `tg_corp_palette()`, `palette_gen()`, `scale_color_tg()`, `scale_fill_tg()`, `ramp_hues()` |
 | **Theme** | `theme_tg()` — apply to all ggplots; set globally with `theme_set(theme_tg())` |
 | **Dates** | `complete_start_date()`, `complete_end_date()`, `last_day()`, `days_to_months()`, `days_to_years()`, `hhmm_to_min()` |
-| **Import** | `import_access_tables_to_variables()`, `import_excel_files_to_variables()`, `import_csv_files_to_variables()`, `import_sas_files_to_variables()`, `import_xpt_files_to_variables()`, `apply_column_map()` |
+| **Import** | `import_access_tables_to_variables()`, `import_excel_files_to_variables()`, `import_csv_files_to_variables()`, `import_sas_files_to_variables()`, `import_sas_dat_export_to_variables()`, `import_xpt_files_to_variables()`, `apply_column_map()` |
 | **Export** | `export_to_excel()`, `export_flextable_to_excel()` |
 | **PPTX** | `init_pptx()`, `add_to_pptx()`, `add_title_slide()`, `convert_to_rvg()` |
 | **Tables** | `format_flextable()`, `na_to_dash()`, `format_incidence_percent()` |
